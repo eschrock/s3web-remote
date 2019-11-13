@@ -1,7 +1,7 @@
-# Titan S3 Provider
+# Titan S3 Web Provider
 
-This is a basic Titan S3 provider. For more information on how it works,
-consult the titan documentation.
+This is a basic Titan read-only web provider designed to work with commits pushed by the S3
+remote provider. For more information on how it works, consult the titan documentation.
 
 ## Contributing
 

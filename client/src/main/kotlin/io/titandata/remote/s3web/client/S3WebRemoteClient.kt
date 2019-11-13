@@ -37,7 +37,7 @@ class S3WebRemoteClient : RemoteClient {
         if (host == null) {
             throw IllegalArgumentException("Missing bucket in S3 remote")
         }
-        
+
         for (p in additionalProperties.keys) {
             throw IllegalArgumentException("Invalid remote property '$p'")
         }
