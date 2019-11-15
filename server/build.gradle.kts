@@ -18,8 +18,9 @@ repositories {
 dependencies {
     compile(kotlin("stdlib"))
     compile("io.titandata:remote-sdk:0.0.8")
-    testImplementation("io.mockk:mockk:1.9.3")
+    compile("com.google.code.gson:gson:2.8.6")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
+    testImplementation("io.mockk:mockk:1.9.3")
 }
 
 // Jar configuration
@@ -48,7 +49,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = "io.titandata"
-            artifactId = "s3web-remote-client"
+            artifactId = "s3web-remote-server"
 
             from(components["java"])
         }
@@ -64,9 +65,6 @@ publishing {
         }
     }
 }
-
-// ktlint configuration
-tasks.named("check").get().dependsOn(tasks.named("ktlint"))
 
 // Test configuration
 
