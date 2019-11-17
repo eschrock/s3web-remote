@@ -1,3 +1,7 @@
+/*
+ * Copyright The Titan Project Contributors.
+ */
+
 package io.titandata.remote.s3web.server
 
 import io.kotlintest.TestCase
@@ -16,6 +20,11 @@ import io.mockk.impl.annotations.OverrideMockKs
 import io.mockk.impl.annotations.SpyK
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.verify
+import io.titandata.remote.RemoteOperation
+import io.titandata.remote.RemoteOperationType
+import io.titandata.remote.RemoteProgress
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import kotlin.IllegalArgumentException
 import okhttp3.Call
@@ -35,6 +44,16 @@ class S3WebRemoteServerTest : StringSpec() {
     @InjectMockKs
     @OverrideMockKs
     var mockServer = S3WebRemoteServer()
+
+    val operation = RemoteOperation(
+            updateProgress = { _: RemoteProgress, _: String?, _: Int? -> Unit },
+            remote = mapOf("url" to "http://host/path"),
+            parameters = emptyMap(),
+            operationId = "operation",
+            commitId = "commit",
+            type = RemoteOperationType.PUSH,
+            data = null
+    )
 
     override fun beforeTest(testCase: TestCase) {
         return MockKAnnotations.init(this)
@@ -160,6 +179,61 @@ class S3WebRemoteServerTest : StringSpec() {
                     "b" to mapOf("c" to "d"))
             val commit = server.getCommit(mapOf("url" to "http://host"), emptyMap(), "x")
             commit shouldBe null
+        }
+
+        "start operation fails for push operation" {
+            shouldThrow<NotImplementedError> {
+                server.startOperation(operation)
+            }
+        }
+
+        "start operation succeeds for pull operation" {
+            server.startOperation(operation.copy(type = RemoteOperationType.PULL))
+        }
+
+        "end operation suceeds" {
+            server.endOperation(operation, true)
+        }
+
+        "push archive fails" {
+            shouldThrow<NotImplementedError> {
+                server.pushArchive(operation, "volume", createTempFile())
+            }
+        }
+
+        "push metadata fails" {
+            shouldThrow<NotImplementedError> {
+                server.pushMetadata(operation, emptyMap(), true)
+            }
+        }
+
+        "pull archive succeeds" {
+            val response: Response = mockk()
+            every { server.getFile(any(), any()) } returns response
+            every { response.isSuccessful } returns true
+            val responseBody: ResponseBody = mockk()
+            every { response.body } returns responseBody
+            every { responseBody.byteStream() } returns ByteArrayInputStream("test".toByteArray())
+
+            val file = createTempFile()
+            server.pullArchive(operation, "volume", file)
+
+            file.readText() shouldBe "test"
+
+            verify {
+                server.getFile(any(), "commit/volume.tar.gz")
+            }
+        }
+
+        "pull archive fails on error" {
+            val response: Response = mockk()
+            every { server.getFile(any(), any()) } returns response
+            every { response.isSuccessful } returns false
+            every { response.code } returns 403
+
+            shouldThrow<IOException> {
+                server.pullArchive(operation, "volume", createTempFile())
+            }
         }
     }
 }

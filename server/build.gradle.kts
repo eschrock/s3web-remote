@@ -5,7 +5,9 @@ plugins {
     `maven-publish`
 
 }
+
 repositories {
+    mavenLocal()
     mavenCentral()
     jcenter()
     maven("https://dl.bintray.com/kotlin/kotlinx")
@@ -17,7 +19,7 @@ repositories {
 
 dependencies {
     compile(kotlin("stdlib"))
-    compile("io.titandata:remote-sdk:0.0.8")
+    compile("io.titandata:remote-sdk:0.0.10")
     compile("com.google.code.gson:gson:2.8.6")
     compile("com.squareup.okhttp3:okhttp:4.2.2")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
