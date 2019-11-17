@@ -55,7 +55,7 @@ class S3WebRemoteServer : ArchiveRemote() {
     /**
      * Fetch a file from the given remote, returning as a response.
      */
-    internal fun getFile(remote: Map<String, Any>, path: String): Response {
+    fun getFile(remote: Map<String, Any>, path: String): Response {
         val url = remote["url"] as String
         val request = Request.Builder().url("$url/$path").build()
         return http.newCall(request).execute()
