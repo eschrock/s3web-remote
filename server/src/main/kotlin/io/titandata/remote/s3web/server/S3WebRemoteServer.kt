@@ -1,10 +1,16 @@
+/*
+ * Copyright The Titan Project Contributors.
+ */
+
 package io.titandata.remote.s3web.server
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.titandata.remote.RemoteOperation
-import io.titandata.remote.RemoteServer
+import io.titandata.remote.RemoteOperationType
 import io.titandata.remote.RemoteServerUtil
+import io.titandata.remote.archive.ArchiveRemote
+import java.io.File
 import java.io.IOException
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -20,7 +26,7 @@ import okhttp3.Response
  * The main thing is that it expects to find the same layout as the S3 provider generates, including a "titan" file
  * at the root of the repository that has all the commit metadata.
  */
-class S3WebRemoteServer : RemoteServer {
+class S3WebRemoteServer : ArchiveRemote() {
 
     internal val util = RemoteServerUtil()
     internal val gson = GsonBuilder().create()
@@ -49,7 +55,7 @@ class S3WebRemoteServer : RemoteServer {
     /**
      * Fetch a file from the given remote, returning as a response.
      */
-    internal fun getFile(remote: Map<String, Any>, path: String): Response {
+    fun getFile(remote: Map<String, Any>, path: String): Response {
         val url = remote["url"] as String
         val request = Request.Builder().url("$url/$path").build()
         return http.newCall(request).execute()
@@ -102,14 +108,33 @@ class S3WebRemoteServer : RemoteServer {
     }
 
     override fun endOperation(operation: RemoteOperation, isSuccessful: Boolean) {
-        throw NotImplementedError()
+        // Do nothing
     }
 
     override fun startOperation(operation: RemoteOperation) {
-        throw NotImplementedError()
+        if (operation.type == RemoteOperationType.PUSH) {
+            throw NotImplementedError("push operations are not supported with s3web remotes")
+        }
     }
 
-    override fun syncVolume(operation: RemoteOperation, volumeName: String, volumeDescription: String, volumePath: String, scratchPath: String) {
-        throw NotImplementedError()
+    override fun pullArchive(operation: RemoteOperation, volume: String, archive: File) {
+        val archivePath = "${operation.commitId}/$volume.tar.gz"
+        val response = getFile(operation.remote, archivePath)
+        if (!response.isSuccessful) {
+            throw IOException("failed to get ${operation.remote["url"]}/$archivePath, error code ${response.code}")
+        }
+        response.body!!.byteStream().use { input ->
+            archive.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+
+    override fun pushArchive(operation: RemoteOperation, volume: String, archive: File) {
+        throw NotImplementedError("push operations are not supported with s3web remotes")
+    }
+
+    override fun pushMetadata(operation: RemoteOperation, commit: Map<String, Any>, isUpdate: Boolean) {
+        throw NotImplementedError("push operations are not supported with s3web remotes")
     }
 }
