@@ -51,6 +51,7 @@ class S3WebRemoteServerTest : StringSpec() {
             parameters = emptyMap(),
             operationId = "operation",
             commitId = "commit",
+            commit = null,
             type = RemoteOperationType.PUSH,
             data = null
     )
